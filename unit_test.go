@@ -480,6 +480,12 @@ func TestIterator(t *testing.T) {
 		CheckEq(t, i*i, ToInt(value))
 	}
 	count = 0
+	for record := range dbm.Each() {
+		CheckEq(t, ToInt(record.Key)*ToInt(record.Key), ToInt(record.Value))
+		count += 1
+	}
+	CheckEq(t, dbm.CountSimple(), count)
+	count = 0
 	for record := range dbm.EachStr() {
 		CheckEq(t, ToInt(record.Key)*ToInt(record.Key), ToInt(record.Value))
 		count += 1
