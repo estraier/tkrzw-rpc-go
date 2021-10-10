@@ -1,4 +1,4 @@
-module github.com/estraier/tkrzw-rpc
+module github.com/estraier/tkrzw-rpc-go
 
 go 1.14
 
