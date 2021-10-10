@@ -916,5 +916,15 @@ func (self *RemoteDBM) Search(mode string, pattern string, capacity int) []strin
 	return result
 }
 
+// Makes an iterator for each record.
+//
+// @return The iterator for each record.
+//
+// Every iterator should be destructed explicitly by the "Destruct" method.
+func (self *RemoteDBM) MakeIterator() *Iterator {
+	iter := &Iterator{self, nil, nil}
+	iter.initialize()
+	return iter
+}
 
 // END OF FILE

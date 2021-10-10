@@ -309,7 +309,7 @@ func TestStatus(t *testing.T) {
 	CheckNe(t, StatusNotFoundError, NewStatus1(StatusUnknownError))
 }
 
-func TestDBMBasic(t *testing.T) {
+func TestRemoteDBM(t *testing.T) {
 	dbm := NewRemoteDBM()
 	CheckTrue(t, strings.Index(dbm.String(), ":unopened>") >= 0)
 	status := dbm.Connect("localhost:1978", -1)
@@ -321,7 +321,6 @@ func TestDBMBasic(t *testing.T) {
 	CheckTrue(t, len(attrs["num_dbms"]) > 0)
 	CheckEq(t, StatusSuccess, dbm.SetDBMIndex(0))
 	attrs = dbm.Inspect()
-	fmt.Println(dbm.Inspect())
 	CheckTrue(t, len(attrs["class"]) > 3)
 	CheckTrue(t, len(attrs["num_records"]) > 0)
 	echo, status := dbm.Echo("hello")
@@ -434,6 +433,107 @@ func TestDBMBasic(t *testing.T) {
 	keys = dbm.Search("regex", "[23]$", 5)
 	CheckEq(t, 2, len(keys))
 	CheckEq(t, StatusSuccess, dbm.Clear())
+	CheckEq(t, StatusSuccess, dbm.Disconnect())
+}
+
+func TestIterator(t *testing.T) {
+	dbm := NewRemoteDBM()
+	status := dbm.Connect("localhost:1978", -1)
+	CheckEq(t, StatusSuccess, status)
+	CheckEq(t, StatusSuccess, dbm.Clear())
+	for i := 0; i < 10; i++ {
+		CheckEq(t, StatusSuccess, dbm.Set(i, i * i, false))
+	}
+	iter := dbm.MakeIterator()
+	CheckTrue(t, strings.Index(iter.String(), ":opened>") >= 0)
+	CheckEq(t, StatusSuccess, iter.First())
+	count := 0
+	for {
+		key, value, status := iter.Get()
+		if !status.IsOK() {
+			CheckEq(t, StatusNotFoundError, status)
+			break
+		}
+		CheckEq(t, ToInt(key) * ToInt(key), ToInt(value))
+		strKey, strValue, status := iter.Get()
+		CheckEq(t, StatusSuccess, status)
+		CheckEq(t, ToInt(strKey) * ToInt(strKey), ToInt(strValue))
+		key2, status := iter.GetKey()
+		CheckEq(t, StatusSuccess, status)
+		CheckEq(t, key, key2)
+		strKey2, status := iter.GetKeyStr()
+		CheckEq(t, StatusSuccess, status)
+		CheckEq(t, strKey, strKey2)
+		value2, status := iter.GetValue()
+		CheckEq(t, StatusSuccess, status)
+		CheckEq(t, value, value2)
+		strValue2, status := iter.GetValueStr()
+		CheckEq(t, StatusSuccess, status)
+		CheckEq(t, strValue, strValue2)
+		CheckEq(t, StatusSuccess, iter.Next())
+		count += 1
+	}
+	CheckEq(t, dbm.CountSimple(), count)
+	for i := 0; i < count; i++ {
+		CheckEq(t, StatusSuccess, iter.Jump(i))
+		key, value, status := iter.Get()
+		CheckEq(t, StatusSuccess, status)
+		CheckEq(t, i, ToInt(key))
+		CheckEq(t, i * i, ToInt(value))
+	}
+	status = iter.Last()
+	if status.IsOK() {
+		count = 0
+    for {
+			key, value, status := iter.Get()
+			if !status.IsOK() {
+				CheckEq(t, StatusNotFoundError, status)
+				break
+			}
+			CheckEq(t, ToInt(key) * ToInt(key), ToInt(value))
+			CheckEq(t, StatusSuccess, iter.Previous())
+			count += 1
+		}
+		CheckEq(t, dbm.CountSimple(), count)
+		CheckEq(t, StatusSuccess, iter.JumpLower("0", false))
+		key, status := iter.GetKey()
+		CheckEq(t, StatusNotFoundError, status)
+		CheckTrue(t, key == nil)
+		CheckEq(t, StatusSuccess, iter.JumpLower("0", true))
+		key, status = iter.GetKey()
+		CheckEq(t, StatusSuccess, status)
+		CheckEq(t, "0", key)
+		CheckEq(t, StatusSuccess, iter.Next())
+		key, status = iter.GetKey()
+		CheckEq(t, StatusSuccess, status)
+		CheckEq(t, "1", key)
+		CheckEq(t, StatusSuccess, iter.JumpUpper("9", false))
+		key, status = iter.GetKey()
+		CheckEq(t, StatusNotFoundError, status)
+		CheckTrue(t, key == nil)
+		CheckEq(t, StatusSuccess, iter.JumpUpper("9", true))
+		key, status = iter.GetKey()
+		CheckEq(t, StatusSuccess, status)
+		CheckEq(t, "9", key)
+		CheckEq(t, StatusSuccess, iter.Previous())
+		key, status = iter.GetKey()
+		CheckEq(t, StatusSuccess, status)
+		CheckEq(t, "8", key)
+		CheckEq(t, StatusSuccess, iter.Set("eight"))
+		value, status := iter.GetValue()
+		CheckEq(t, StatusSuccess, status)
+		CheckEq(t, "eight", value)
+		CheckEq(t, StatusSuccess, iter.Remove())
+		key, status = iter.GetKey()
+		CheckEq(t, StatusSuccess, status)
+		CheckEq(t, "9", key)
+		CheckEq(t, StatusSuccess, iter.Remove())
+		CheckEq(t, StatusNotFoundError, iter.Remove())
+		CheckEq(t, 8, dbm.CountSimple())
+	} else {
+		CheckEq(t, StatusNotImplementedError, status)
+	}
+	iter.Destruct()
 	CheckEq(t, StatusSuccess, dbm.Disconnect())
 }
 
