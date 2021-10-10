@@ -16,16 +16,15 @@ package tkrzw_rpc
 import (
 	"errors"
 	"fmt"
-	//"math/rand"
+	"math/rand"
 	"os"
 	"path"
 	"reflect"
 	"runtime"
-	//"sync"
+	"sync"
 	"strings"
 	"testing"
 	"time"
-
 )
 
 func CheckEq(t *testing.T, want interface{}, got interface{}) {
@@ -432,7 +431,6 @@ func TestRemoteDBM(t *testing.T) {
 	}
 	keys = dbm.Search("regex", "[23]$", 5)
 	CheckEq(t, 2, len(keys))
-	CheckEq(t, StatusSuccess, dbm.Clear())
 	CheckEq(t, StatusSuccess, dbm.Disconnect())
 }
 
@@ -535,6 +533,78 @@ func TestIterator(t *testing.T) {
 	}
 	iter.Destruct()
 	CheckEq(t, StatusSuccess, dbm.Disconnect())
+}
+
+func TestThread(t *testing.T) {
+	dbm := NewRemoteDBM()
+	status := dbm.Connect("localhost:1978", -1)
+	CheckEq(t, StatusSuccess, status)
+	CheckEq(t, StatusSuccess, dbm.Clear())
+	numIterations := 1000
+	numThreads := 5
+	recordMaps := make([]map[string]string, 0, numThreads)
+	mutexes := make([]sync.Mutex, 0, numThreads)
+	for i := 0; i < numThreads; i++ {
+		recordMaps = append(recordMaps, make(map[string]string))
+		mutexes = append(mutexes, sync.Mutex{})
+	}
+	task := func(thid int, done chan<- bool) {
+		random := rand.New(rand.NewSource(int64(thid)))
+		for i := 0; i < numIterations; i++ {
+			keyNum := random.Intn(numIterations * numThreads)
+			valueNum := random.Intn(numIterations * numThreads)
+			key := fmt.Sprintf("%d", keyNum)
+			value := fmt.Sprintf("%d", valueNum*valueNum)
+			groupIndex := keyNum % numThreads
+			recordMap := &recordMaps[groupIndex]
+			mutex := &mutexes[groupIndex]
+			mutex.Lock()
+			if random.Intn(5) == 0 {
+				gotValue, status := dbm.Get(key)
+				if status.IsOK() {
+					CheckEq(t, (*recordMap)[key], gotValue)
+				} else {
+					CheckEq(t, StatusNotFoundError, status)
+				}
+			} else if random.Intn(5) == 0 {
+				status := dbm.Remove(key)
+				CheckTrue(t, status.Equals(StatusSuccess) || status.Equals(StatusNotFoundError))
+				delete(*recordMap, key)
+			} else {
+				CheckEq(t, StatusSuccess, dbm.Set(key, value, true))
+				(*recordMap)[key] = value
+			}
+			mutex.Unlock()
+			if random.Intn(10) == 0 {
+				iter := dbm.MakeIterator()
+				iter.Jump(key)
+				_, _, status := iter.Get()
+				CheckTrue(t, status.Equals(StatusSuccess) || status.Equals(StatusNotFoundError))
+				iter.Destruct()
+			}
+		}
+		done <- true
+	}
+	dones := make([]chan bool, 0)
+	for i := 0; i < numThreads; i++ {
+		done := make(chan bool)
+		go task(i, done)
+		dones = append(dones, done)
+	}
+	for _, done := range dones {
+		<-done
+	}
+	numRecords := 0
+	for _, recordMap := range recordMaps {
+		numRecords += len(recordMap)
+		for key, value := range recordMap {
+			gotValue, status := dbm.Get(key)
+			CheckEq(t, StatusSuccess, status)
+			CheckEq(t, value, gotValue)
+		}
+	}
+	CheckEq(t, numRecords, dbm.CountSimple())
+	CheckEq(t, StatusSuccess, dbm.Disconnect())	
 }
 
 // END OF FILE

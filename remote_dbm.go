@@ -16,16 +16,6 @@ package tkrzw_rpc
 import (
 	"context"
 	"fmt"
-	/*
-	"errors"
-	//"math/rand"
-	"os"
-	"path"
-	"reflect"
-	"runtime"
-	//"sync"
-	"testing"
-	*/
 	"time"
 	"unsafe"
 	"google.golang.org/grpc"
