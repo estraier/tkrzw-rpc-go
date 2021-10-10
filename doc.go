@@ -17,7 +17,7 @@ If you write the above import directive, the Go module for Tkrzw-RPC is installe
 
 
 
-   
+
 */
 package tkrzw_rpc
 

@@ -16,11 +16,11 @@ package tkrzw_rpc
 import (
 	"context"
 	"fmt"
-	"time"
-	"unsafe"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/status"
+	"time"
+	"unsafe"
 )
 
 func strGRPCError(err error) string {
@@ -39,9 +39,9 @@ func makeStatusFromProto(proto_status *StatusProto) *Status {
 //
 // All operations except for "Connect" and "Disconnect" are thread-safe; Multiple threads can access the same database concurrently.  The "SetDBMIndex" affects all threads so it should be called before the object is shared.
 type RemoteDBM struct {
-	conn *grpc.ClientConn
-	stub DBMServiceClient
-	timeout float64
+	conn     *grpc.ClientConn
+	stub     DBMServiceClient
+	timeout  float64
 	dbmIndex int32
 }
 
@@ -90,7 +90,7 @@ func (self *RemoteDBM) Connect(address string, timeout float64) *Status {
 	if timeout < 0 {
 		timeout = float64(1 << 30)
 	}
-	deadline := time.Now().Add(time.Millisecond * time.Duration(timeout * 1000))
+	deadline := time.Now().Add(time.Millisecond * time.Duration(timeout*1000))
 	conn, err := grpc.Dial(address, grpc.WithInsecure())
 	if err != nil {
 		return NewStatus2(StatusNetworkError, strGRPCError(err))
@@ -116,7 +116,7 @@ func (self *RemoteDBM) Connect(address string, timeout float64) *Status {
 			conn.Close()
 			return NewStatus2(StatusNetworkError, "connection failed")
 		}
-		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond * 100)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)
 		defer cancel()
 		conn.WaitForStateChange(ctx, state)
 	}
@@ -166,7 +166,7 @@ func (self *RemoteDBM) Echo(message string) (string, *Status) {
 		return "", NewStatus2(StatusPreconditionError, "not opened connection")
 	}
 	ctx, cancel := context.WithTimeout(
-		context.Background(), time.Millisecond * time.Duration(self.timeout * 1000))
+		context.Background(), time.Millisecond*time.Duration(self.timeout*1000))
 	defer cancel()
 	request := EchoRequest{}
 	request.Message = message
@@ -188,7 +188,7 @@ func (self *RemoteDBM) Inspect() map[string]string {
 		return result
 	}
 	ctx, cancel := context.WithTimeout(
-		context.Background(), time.Millisecond * time.Duration(self.timeout * 1000))
+		context.Background(), time.Millisecond*time.Duration(self.timeout*1000))
 	defer cancel()
 	request := InspectRequest{}
 	request.DbmIndex = self.dbmIndex
@@ -211,7 +211,7 @@ func (self *RemoteDBM) Get(key interface{}) ([]byte, *Status) {
 		return nil, NewStatus2(StatusPreconditionError, "not opened connection")
 	}
 	ctx, cancel := context.WithTimeout(
-		context.Background(), time.Millisecond * time.Duration(self.timeout * 1000))
+		context.Background(), time.Millisecond*time.Duration(self.timeout*1000))
 	defer cancel()
 	request := GetRequest{}
 	request.DbmIndex = self.dbmIndex
@@ -223,7 +223,7 @@ func (self *RemoteDBM) Get(key interface{}) ([]byte, *Status) {
 	if StatusCode(response.Status.Code) == StatusSuccess {
 		return response.Value, makeStatusFromProto(response.Status)
 	}
-	return nil, makeStatusFromProto(response.Status)	
+	return nil, makeStatusFromProto(response.Status)
 }
 
 // Gets the value of a record of a key, as a string.
@@ -274,7 +274,7 @@ func (self *RemoteDBM) GetMulti(keys []string) map[string][]byte {
 		return result
 	}
 	ctx, cancel := context.WithTimeout(
-		context.Background(), time.Millisecond * time.Duration(self.timeout * 1000))
+		context.Background(), time.Millisecond*time.Duration(self.timeout*1000))
 	defer cancel()
 	request := GetMultiRequest{}
 	request.DbmIndex = self.dbmIndex
@@ -301,7 +301,7 @@ func (self *RemoteDBM) GetMultiStr(keys []string) map[string]string {
 		return result
 	}
 	ctx, cancel := context.WithTimeout(
-		context.Background(), time.Millisecond * time.Duration(self.timeout * 1000))
+		context.Background(), time.Millisecond*time.Duration(self.timeout*1000))
 	defer cancel()
 	request := GetMultiRequest{}
 	request.DbmIndex = self.dbmIndex
@@ -329,7 +329,7 @@ func (self *RemoteDBM) Set(key interface{}, value interface{}, overwrite bool) *
 		return NewStatus2(StatusPreconditionError, "not opened connection")
 	}
 	ctx, cancel := context.WithTimeout(
-		context.Background(), time.Millisecond * time.Duration(self.timeout * 1000))
+		context.Background(), time.Millisecond*time.Duration(self.timeout*1000))
 	defer cancel()
 	request := SetRequest{}
 	request.DbmIndex = self.dbmIndex
@@ -353,12 +353,12 @@ func (self *RemoteDBM) SetMulti(records map[string][]byte, overwrite bool) *Stat
 		return NewStatus2(StatusPreconditionError, "not opened connection")
 	}
 	ctx, cancel := context.WithTimeout(
-		context.Background(), time.Millisecond * time.Duration(self.timeout * 1000))
+		context.Background(), time.Millisecond*time.Duration(self.timeout*1000))
 	defer cancel()
 	request := SetMultiRequest{}
 	request.DbmIndex = self.dbmIndex
-	for key, value := range(records) {
-		record := BytesPair{};
+	for key, value := range records {
+		record := BytesPair{}
 		record.First = ToByteArray(key)
 		record.Second = value
 		request.Records = append(request.Records, &record)
@@ -381,12 +381,12 @@ func (self *RemoteDBM) SetMultiStr(records map[string]string, overwrite bool) *S
 		return NewStatus2(StatusPreconditionError, "not opened connection")
 	}
 	ctx, cancel := context.WithTimeout(
-		context.Background(), time.Millisecond * time.Duration(self.timeout * 1000))
+		context.Background(), time.Millisecond*time.Duration(self.timeout*1000))
 	defer cancel()
 	request := SetMultiRequest{}
 	request.DbmIndex = self.dbmIndex
-	for key, value := range(records) {
-		record := BytesPair{};
+	for key, value := range records {
+		record := BytesPair{}
 		record.First = ToByteArray(key)
 		record.Second = ToByteArray(value)
 		request.Records = append(request.Records, &record)
@@ -408,7 +408,7 @@ func (self *RemoteDBM) Remove(key interface{}) *Status {
 		return NewStatus2(StatusPreconditionError, "not opened connection")
 	}
 	ctx, cancel := context.WithTimeout(
-		context.Background(), time.Millisecond * time.Duration(self.timeout * 1000))
+		context.Background(), time.Millisecond*time.Duration(self.timeout*1000))
 	defer cancel()
 	request := RemoveRequest{}
 	request.DbmIndex = self.dbmIndex
@@ -429,11 +429,11 @@ func (self *RemoteDBM) RemoveMulti(keys []string) *Status {
 		return NewStatus2(StatusPreconditionError, "not opened connection")
 	}
 	ctx, cancel := context.WithTimeout(
-		context.Background(), time.Millisecond * time.Duration(self.timeout * 1000))
+		context.Background(), time.Millisecond*time.Duration(self.timeout*1000))
 	defer cancel()
 	request := RemoveMultiRequest{}
 	request.DbmIndex = self.dbmIndex
-	for _, key := range(keys) {
+	for _, key := range keys {
 		request.Keys = append(request.Keys, ToByteArray(key))
 	}
 	response, err := self.stub.RemoveMulti(ctx, &request)
@@ -456,7 +456,7 @@ func (self *RemoteDBM) Append(key interface{}, value interface{}, delim interfac
 		return NewStatus2(StatusPreconditionError, "not opened connection")
 	}
 	ctx, cancel := context.WithTimeout(
-		context.Background(), time.Millisecond * time.Duration(self.timeout * 1000))
+		context.Background(), time.Millisecond*time.Duration(self.timeout*1000))
 	defer cancel()
 	request := AppendRequest{}
 	request.DbmIndex = self.dbmIndex
@@ -482,12 +482,12 @@ func (self *RemoteDBM) AppendMulti(records map[string][]byte, delim interface{})
 		return NewStatus2(StatusPreconditionError, "not opened connection")
 	}
 	ctx, cancel := context.WithTimeout(
-		context.Background(), time.Millisecond * time.Duration(self.timeout * 1000))
+		context.Background(), time.Millisecond*time.Duration(self.timeout*1000))
 	defer cancel()
 	request := AppendMultiRequest{}
 	request.DbmIndex = self.dbmIndex
-	for key, value := range(records) {
-		record := BytesPair{};
+	for key, value := range records {
+		record := BytesPair{}
 		record.First = ToByteArray(key)
 		record.Second = value
 		request.Records = append(request.Records, &record)
@@ -512,12 +512,12 @@ func (self *RemoteDBM) AppendMultiStr(records map[string]string, delim interface
 		return NewStatus2(StatusPreconditionError, "not opened connection")
 	}
 	ctx, cancel := context.WithTimeout(
-		context.Background(), time.Millisecond * time.Duration(self.timeout * 1000))
+		context.Background(), time.Millisecond*time.Duration(self.timeout*1000))
 	defer cancel()
 	request := AppendMultiRequest{}
 	request.DbmIndex = self.dbmIndex
-	for key, value := range(records) {
-		record := BytesPair{};
+	for key, value := range records {
+		record := BytesPair{}
 		record.First = ToByteArray(key)
 		record.Second = ToByteArray(value)
 		request.Records = append(request.Records, &record)
@@ -542,7 +542,7 @@ func (self *RemoteDBM) CompareExchange(
 		return NewStatus2(StatusPreconditionError, "not opened connection")
 	}
 	ctx, cancel := context.WithTimeout(
-		context.Background(), time.Millisecond * time.Duration(self.timeout * 1000))
+		context.Background(), time.Millisecond*time.Duration(self.timeout*1000))
 	defer cancel()
 	request := CompareExchangeRequest{}
 	request.DbmIndex = self.dbmIndex
@@ -574,7 +574,7 @@ func (self *RemoteDBM) Increment(
 		return 0, NewStatus2(StatusPreconditionError, "not opened connection")
 	}
 	ctx, cancel := context.WithTimeout(
-		context.Background(), time.Millisecond * time.Duration(self.timeout * 1000))
+		context.Background(), time.Millisecond*time.Duration(self.timeout*1000))
 	defer cancel()
 	request := IncrementRequest{}
 	request.DbmIndex = self.dbmIndex
@@ -599,12 +599,12 @@ func (self *RemoteDBM) CompareExchangeMulti(
 		return NewStatus2(StatusPreconditionError, "not opened connection")
 	}
 	ctx, cancel := context.WithTimeout(
-		context.Background(), time.Millisecond * time.Duration(self.timeout * 1000))
+		context.Background(), time.Millisecond*time.Duration(self.timeout*1000))
 	defer cancel()
 	request := CompareExchangeMultiRequest{}
 	request.DbmIndex = self.dbmIndex
 	for _, record := range expected {
-		state := RecordState{};
+		state := RecordState{}
 		state.Key = record.Key
 		if record.Value != nil {
 			state.Existence = true
@@ -613,7 +613,7 @@ func (self *RemoteDBM) CompareExchangeMulti(
 		request.Expected = append(request.Expected, &state)
 	}
 	for _, record := range desired {
-		state := RecordState{};
+		state := RecordState{}
 		state.Key = record.Key
 		if record.Value != nil {
 			state.Existence = true
@@ -639,12 +639,12 @@ func (self *RemoteDBM) CompareExchangeMultiStr(
 		return NewStatus2(StatusPreconditionError, "not opened connection")
 	}
 	ctx, cancel := context.WithTimeout(
-		context.Background(), time.Millisecond * time.Duration(self.timeout * 1000))
+		context.Background(), time.Millisecond*time.Duration(self.timeout*1000))
 	defer cancel()
 	request := CompareExchangeMultiRequest{}
 	request.DbmIndex = self.dbmIndex
 	for _, record := range expected {
-		state := RecordState{};
+		state := RecordState{}
 		state.Key = ToByteArray(record.Key)
 		if len(record.Value) != 0 {
 			state.Existence = true
@@ -653,7 +653,7 @@ func (self *RemoteDBM) CompareExchangeMultiStr(
 		request.Expected = append(request.Expected, &state)
 	}
 	for _, record := range desired {
-		state := RecordState{};
+		state := RecordState{}
 		state.Key = ToByteArray(record.Key)
 		if len(record.Value) != 0 {
 			state.Existence = true
@@ -676,7 +676,7 @@ func (self *RemoteDBM) Clear() *Status {
 		return NewStatus2(StatusPreconditionError, "not opened connection")
 	}
 	ctx, cancel := context.WithTimeout(
-		context.Background(), time.Millisecond * time.Duration(self.timeout * 1000))
+		context.Background(), time.Millisecond*time.Duration(self.timeout*1000))
 	defer cancel()
 	request := ClearRequest{}
 	request.DbmIndex = self.dbmIndex
@@ -695,7 +695,7 @@ func (self *RemoteDBM) Count() (int64, *Status) {
 		return 0, NewStatus2(StatusPreconditionError, "not opened connection")
 	}
 	ctx, cancel := context.WithTimeout(
-		context.Background(), time.Millisecond * time.Duration(self.timeout * 1000))
+		context.Background(), time.Millisecond*time.Duration(self.timeout*1000))
 	defer cancel()
 	request := CountRequest{}
 	request.DbmIndex = self.dbmIndex
@@ -714,7 +714,7 @@ func (self *RemoteDBM) CountSimple() int64 {
 		return -1
 	}
 	ctx, cancel := context.WithTimeout(
-		context.Background(), time.Millisecond * time.Duration(self.timeout * 1000))
+		context.Background(), time.Millisecond*time.Duration(self.timeout*1000))
 	defer cancel()
 	request := CountRequest{}
 	request.DbmIndex = self.dbmIndex
@@ -736,7 +736,7 @@ func (self *RemoteDBM) GetFileSize() (int64, *Status) {
 		return 0, NewStatus2(StatusPreconditionError, "not opened connection")
 	}
 	ctx, cancel := context.WithTimeout(
-		context.Background(), time.Millisecond * time.Duration(self.timeout * 1000))
+		context.Background(), time.Millisecond*time.Duration(self.timeout*1000))
 	defer cancel()
 	request := GetFileSizeRequest{}
 	request.DbmIndex = self.dbmIndex
@@ -755,7 +755,7 @@ func (self *RemoteDBM) GetFileSizeSimple() int64 {
 		return -1
 	}
 	ctx, cancel := context.WithTimeout(
-		context.Background(), time.Millisecond * time.Duration(self.timeout * 1000))
+		context.Background(), time.Millisecond*time.Duration(self.timeout*1000))
 	defer cancel()
 	request := GetFileSizeRequest{}
 	request.DbmIndex = self.dbmIndex
@@ -785,13 +785,13 @@ func (self *RemoteDBM) Rebuild(params map[string]string) *Status {
 		return NewStatus2(StatusPreconditionError, "not opened connection")
 	}
 	ctx, cancel := context.WithTimeout(
-		context.Background(), time.Millisecond * time.Duration(self.timeout * 1000))
+		context.Background(), time.Millisecond*time.Duration(self.timeout*1000))
 	defer cancel()
 	request := RebuildRequest{}
 	request.DbmIndex = self.dbmIndex
 	if params != nil {
-		for key, value := range(params) {
-			param := StringPair{};
+		for key, value := range params {
+			param := StringPair{}
 			param.First = key
 			param.Second = value
 			request.Params = append(request.Params, &param)
@@ -812,7 +812,7 @@ func (self *RemoteDBM) ShouldBeRebuilt() (bool, *Status) {
 		return false, NewStatus2(StatusPreconditionError, "not opened connection")
 	}
 	ctx, cancel := context.WithTimeout(
-		context.Background(), time.Millisecond * time.Duration(self.timeout * 1000))
+		context.Background(), time.Millisecond*time.Duration(self.timeout*1000))
 	defer cancel()
 	request := ShouldBeRebuiltRequest{}
 	request.DbmIndex = self.dbmIndex
@@ -831,7 +831,7 @@ func (self *RemoteDBM) ShouldBeRebuiltSimple() bool {
 		return false
 	}
 	ctx, cancel := context.WithTimeout(
-		context.Background(), time.Millisecond * time.Duration(self.timeout * 1000))
+		context.Background(), time.Millisecond*time.Duration(self.timeout*1000))
 	defer cancel()
 	request := ShouldBeRebuiltRequest{}
 	request.DbmIndex = self.dbmIndex
@@ -857,14 +857,14 @@ func (self *RemoteDBM) Synchronize(hard bool, params map[string]string) *Status 
 		return NewStatus2(StatusPreconditionError, "not opened connection")
 	}
 	ctx, cancel := context.WithTimeout(
-		context.Background(), time.Millisecond * time.Duration(self.timeout * 1000))
+		context.Background(), time.Millisecond*time.Duration(self.timeout*1000))
 	defer cancel()
 	request := SynchronizeRequest{}
 	request.DbmIndex = self.dbmIndex
 	request.Hard = hard
 	if params != nil {
-		for key, value := range(params) {
-			param := StringPair{};
+		for key, value := range params {
+			param := StringPair{}
 			param.First = key
 			param.Second = value
 			request.Params = append(request.Params, &param)
@@ -889,7 +889,7 @@ func (self *RemoteDBM) Search(mode string, pattern string, capacity int) []strin
 		return result
 	}
 	ctx, cancel := context.WithTimeout(
-		context.Background(), time.Millisecond * time.Duration(self.timeout * 1000))
+		context.Background(), time.Millisecond*time.Duration(self.timeout*1000))
 	defer cancel()
 	request := SearchRequest{}
 	request.DbmIndex = self.dbmIndex
@@ -915,6 +915,60 @@ func (self *RemoteDBM) MakeIterator() *Iterator {
 	iter := &Iterator{self, nil, nil}
 	iter.initialize()
 	return iter
+}
+
+// Makes a channel to read each records.
+//
+// @return the channel to read each records.  All values should be read from the channel to avoid resource leak.
+func (self *RemoteDBM) Each() <-chan KeyValuePair {
+	chan_record := make(chan KeyValuePair)
+	reader := func(chan_send chan<- KeyValuePair) {
+		defer close(chan_record)
+		iter := self.MakeIterator()
+		defer iter.Destruct()
+		if !iter.First().IsOK() {
+			return
+		}
+		for {
+			key, value, status := iter.Get()
+			if !status.IsOK() {
+				break
+			}
+			chan_send <- KeyValuePair{key, value}
+			if !iter.Next().IsOK() {
+				return
+			}
+		}
+	}
+	go reader(chan_record)
+	return chan_record
+}
+
+// Makes a channel to read each records, as strings.
+//
+// @return the channel to read each records.  All values should be read from the channel to avoid resource leak.
+func (self *RemoteDBM) EachStr() <-chan KeyValueStrPair {
+	chan_record := make(chan KeyValueStrPair)
+	reader := func(chan_send chan<- KeyValueStrPair) {
+		defer close(chan_record)
+		iter := self.MakeIterator()
+		defer iter.Destruct()
+		if !iter.First().IsOK() {
+			return
+		}
+		for {
+			key, value, status := iter.GetStr()
+			if !status.IsOK() {
+				break
+			}
+			chan_send <- KeyValueStrPair{key, value}
+			if !iter.Next().IsOK() {
+				return
+			}
+		}
+	}
+	go reader(chan_record)
+	return chan_record
 }
 
 // END OF FILE

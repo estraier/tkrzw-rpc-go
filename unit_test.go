@@ -21,8 +21,8 @@ import (
 	"path"
 	"reflect"
 	"runtime"
-	"sync"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -394,8 +394,8 @@ func TestRemoteDBM(t *testing.T) {
 	CheckEq(t, "ni", dbm.GetSimple("two", "*"))
 	CheckEq(t, StatusInfeasibleError, dbm.CompareExchangeMulti(set2, set3))
 	strSet1 := []KeyValueStrPair{KeyValueStrPair{"one", "ichi"}, KeyValueStrPair{"two", "ni"}}
-	strSet2:= []KeyValueStrPair{KeyValueStrPair{"one", ""}, KeyValueStrPair{"two", ""}}
-	strSet3:= []KeyValueStrPair{KeyValueStrPair{"one", "first"}, KeyValueStrPair{"two", "second"}}
+	strSet2 := []KeyValueStrPair{KeyValueStrPair{"one", ""}, KeyValueStrPair{"two", ""}}
+	strSet3 := []KeyValueStrPair{KeyValueStrPair{"one", "first"}, KeyValueStrPair{"two", "second"}}
 	CheckEq(t, StatusSuccess, dbm.CompareExchangeMultiStr(strSet1, strSet2))
 	CheckEq(t, "*", dbm.GetSimple("one", "*"))
 	CheckEq(t, "*", dbm.GetSimple("two", "*"))
@@ -440,7 +440,7 @@ func TestIterator(t *testing.T) {
 	CheckEq(t, StatusSuccess, status)
 	CheckEq(t, StatusSuccess, dbm.Clear())
 	for i := 0; i < 10; i++ {
-		CheckEq(t, StatusSuccess, dbm.Set(i, i * i, false))
+		CheckEq(t, StatusSuccess, dbm.Set(i, i*i, false))
 	}
 	iter := dbm.MakeIterator()
 	CheckTrue(t, strings.Index(iter.String(), ":opened>") >= 0)
@@ -452,10 +452,10 @@ func TestIterator(t *testing.T) {
 			CheckEq(t, StatusNotFoundError, status)
 			break
 		}
-		CheckEq(t, ToInt(key) * ToInt(key), ToInt(value))
+		CheckEq(t, ToInt(key)*ToInt(key), ToInt(value))
 		strKey, strValue, status := iter.Get()
 		CheckEq(t, StatusSuccess, status)
-		CheckEq(t, ToInt(strKey) * ToInt(strKey), ToInt(strValue))
+		CheckEq(t, ToInt(strKey)*ToInt(strKey), ToInt(strValue))
 		key2, status := iter.GetKey()
 		CheckEq(t, StatusSuccess, status)
 		CheckEq(t, key, key2)
@@ -477,18 +477,24 @@ func TestIterator(t *testing.T) {
 		key, value, status := iter.Get()
 		CheckEq(t, StatusSuccess, status)
 		CheckEq(t, i, ToInt(key))
-		CheckEq(t, i * i, ToInt(value))
+		CheckEq(t, i*i, ToInt(value))
 	}
+	count = 0
+	for record := range dbm.EachStr() {
+		CheckEq(t, ToInt(record.Key)*ToInt(record.Key), ToInt(record.Value))
+		count += 1
+	}
+	CheckEq(t, dbm.CountSimple(), count)
 	status = iter.Last()
 	if status.IsOK() {
 		count = 0
-    for {
+		for {
 			key, value, status := iter.Get()
 			if !status.IsOK() {
 				CheckEq(t, StatusNotFoundError, status)
 				break
 			}
-			CheckEq(t, ToInt(key) * ToInt(key), ToInt(value))
+			CheckEq(t, ToInt(key)*ToInt(key), ToInt(value))
 			CheckEq(t, StatusSuccess, iter.Previous())
 			count += 1
 		}
@@ -604,7 +610,7 @@ func TestThread(t *testing.T) {
 		}
 	}
 	CheckEq(t, numRecords, dbm.CountSimple())
-	CheckEq(t, StatusSuccess, dbm.Disconnect())	
+	CheckEq(t, StatusSuccess, dbm.Disconnect())
 }
 
 // END OF FILE

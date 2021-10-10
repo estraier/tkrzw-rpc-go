@@ -28,6 +28,10 @@ install :
 	@printf '#================================================================\n'
 
 dist :
+	$(MAKE) fmt
+	[ ! -f perf/Makefile ] || cd perf && $(MAKE) fmt
+	[ ! -f wicked/Makefile ] || cd wicked && $(MAKE) fmt
+	[ ! -f example/Makefile ] || cd example && $(MAKE) fmt
 	$(MAKE) distclean
 	rm -Rf "../$(PACKAGEDIR)" "../$(PACKAGETGZ)"
 	cd .. && cp -R tkrzw-rpc-go $(PACKAGEDIR) && \
@@ -36,6 +40,9 @@ dist :
 	sync ; sync
 
 distclean : clean apidocclean
+	[ ! -f perf/Makefile ] || cd perf && $(MAKE) clean
+	[ ! -f wicked/Makefile ] || cd wicked && $(MAKE) clean
+	[ ! -f example/Makefile ] || cd example && $(MAKE) clean
 
 check : test runperf runwicked
 	@printf '\n'

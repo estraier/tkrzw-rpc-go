@@ -37,7 +37,7 @@ func (self *Iterator) initialize() {
 		return
 	}
 	ctx, cancel := context.WithTimeout(
-		context.Background(), time.Millisecond * time.Duration(self.dbm.timeout * 1000))
+		context.Background(), time.Millisecond*time.Duration(self.dbm.timeout*1000))
 	stream, err := self.dbm.stub.Iterate(ctx)
 	if err != nil {
 		cancel()
@@ -83,7 +83,7 @@ func (self *Iterator) First() *Status {
 	}
 	request := IterateRequest{}
 	request.DbmIndex = self.dbm.dbmIndex
-	request.Operation = IterateRequest_OP_FIRST;
+	request.Operation = IterateRequest_OP_FIRST
 	err := self.stream.Send(&request)
 	if err != nil {
 		return NewStatus2(StatusNetworkError, strGRPCError(err))
@@ -109,7 +109,7 @@ func (self *Iterator) Last() *Status {
 	}
 	request := IterateRequest{}
 	request.DbmIndex = self.dbm.dbmIndex
-	request.Operation = IterateRequest_OP_LAST;
+	request.Operation = IterateRequest_OP_LAST
 	err := self.stream.Send(&request)
 	if err != nil {
 		return NewStatus2(StatusNetworkError, strGRPCError(err))
@@ -136,7 +136,7 @@ func (self *Iterator) Jump(key interface{}) *Status {
 	}
 	request := IterateRequest{}
 	request.DbmIndex = self.dbm.dbmIndex
-	request.Operation = IterateRequest_OP_JUMP;
+	request.Operation = IterateRequest_OP_JUMP
 	request.Key = ToByteArray(key)
 	err := self.stream.Send(&request)
 	if err != nil {
@@ -165,7 +165,7 @@ func (self *Iterator) JumpLower(key interface{}, inclusive bool) *Status {
 	}
 	request := IterateRequest{}
 	request.DbmIndex = self.dbm.dbmIndex
-	request.Operation = IterateRequest_OP_JUMP_LOWER;
+	request.Operation = IterateRequest_OP_JUMP_LOWER
 	request.Key = ToByteArray(key)
 	request.JumpInclusive = inclusive
 	err := self.stream.Send(&request)
@@ -195,7 +195,7 @@ func (self *Iterator) JumpUpper(key interface{}, inclusive bool) *Status {
 	}
 	request := IterateRequest{}
 	request.DbmIndex = self.dbm.dbmIndex
-	request.Operation = IterateRequest_OP_JUMP_UPPER;
+	request.Operation = IterateRequest_OP_JUMP_UPPER
 	request.Key = ToByteArray(key)
 	request.JumpInclusive = inclusive
 	err := self.stream.Send(&request)
@@ -223,7 +223,7 @@ func (self *Iterator) Next() *Status {
 	}
 	request := IterateRequest{}
 	request.DbmIndex = self.dbm.dbmIndex
-	request.Operation = IterateRequest_OP_NEXT;
+	request.Operation = IterateRequest_OP_NEXT
 	err := self.stream.Send(&request)
 	if err != nil {
 		return NewStatus2(StatusNetworkError, strGRPCError(err))
@@ -249,7 +249,7 @@ func (self *Iterator) Previous() *Status {
 	}
 	request := IterateRequest{}
 	request.DbmIndex = self.dbm.dbmIndex
-	request.Operation = IterateRequest_OP_PREVIOUS;
+	request.Operation = IterateRequest_OP_PREVIOUS
 	err := self.stream.Send(&request)
 	if err != nil {
 		return NewStatus2(StatusNetworkError, strGRPCError(err))
@@ -273,7 +273,7 @@ func (self *Iterator) Get() ([]byte, []byte, *Status) {
 	}
 	request := IterateRequest{}
 	request.DbmIndex = self.dbm.dbmIndex
-	request.Operation = IterateRequest_OP_GET;
+	request.Operation = IterateRequest_OP_GET
 	err := self.stream.Send(&request)
 	if err != nil {
 		return nil, nil, NewStatus2(StatusNetworkError, strGRPCError(err))
@@ -300,7 +300,7 @@ func (self *Iterator) GetStr() (string, string, *Status) {
 	}
 	request := IterateRequest{}
 	request.DbmIndex = self.dbm.dbmIndex
-	request.Operation = IterateRequest_OP_GET;
+	request.Operation = IterateRequest_OP_GET
 	err := self.stream.Send(&request)
 	if err != nil {
 		return "", "", NewStatus2(StatusNetworkError, strGRPCError(err))
@@ -327,7 +327,7 @@ func (self *Iterator) GetKey() ([]byte, *Status) {
 	}
 	request := IterateRequest{}
 	request.DbmIndex = self.dbm.dbmIndex
-	request.Operation = IterateRequest_OP_GET;
+	request.Operation = IterateRequest_OP_GET
 	request.OmitValue = true
 	err := self.stream.Send(&request)
 	if err != nil {
@@ -355,7 +355,7 @@ func (self *Iterator) GetKeyStr() (string, *Status) {
 	}
 	request := IterateRequest{}
 	request.DbmIndex = self.dbm.dbmIndex
-	request.Operation = IterateRequest_OP_GET;
+	request.Operation = IterateRequest_OP_GET
 	request.OmitValue = true
 	err := self.stream.Send(&request)
 	if err != nil {
@@ -383,7 +383,7 @@ func (self *Iterator) GetValue() ([]byte, *Status) {
 	}
 	request := IterateRequest{}
 	request.DbmIndex = self.dbm.dbmIndex
-	request.Operation = IterateRequest_OP_GET;
+	request.Operation = IterateRequest_OP_GET
 	request.OmitKey = true
 	err := self.stream.Send(&request)
 	if err != nil {
@@ -411,7 +411,7 @@ func (self *Iterator) GetValueStr() (string, *Status) {
 	}
 	request := IterateRequest{}
 	request.DbmIndex = self.dbm.dbmIndex
-	request.Operation = IterateRequest_OP_GET;
+	request.Operation = IterateRequest_OP_GET
 	request.OmitKey = true
 	err := self.stream.Send(&request)
 	if err != nil {
@@ -440,7 +440,7 @@ func (self *Iterator) Set(value interface{}) *Status {
 	}
 	request := IterateRequest{}
 	request.DbmIndex = self.dbm.dbmIndex
-	request.Operation = IterateRequest_OP_SET;
+	request.Operation = IterateRequest_OP_SET
 	request.Value = ToByteArray(value)
 	err := self.stream.Send(&request)
 	if err != nil {
@@ -465,7 +465,7 @@ func (self *Iterator) Remove() *Status {
 	}
 	request := IterateRequest{}
 	request.DbmIndex = self.dbm.dbmIndex
-	request.Operation = IterateRequest_OP_REMOVE;
+	request.Operation = IterateRequest_OP_REMOVE
 	err := self.stream.Send(&request)
 	if err != nil {
 		return NewStatus2(StatusNetworkError, strGRPCError(err))
