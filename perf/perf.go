@@ -40,8 +40,47 @@ func main() {
 	dbm := tkrzw_rpc.NewRemoteDBM()
 	dbm.Connect(address, -1).OrDie()
 	dbm.Clear().OrDie()
-	fmt.Println("Setting:")
+	fmt.Println("Echoing:")
 	startTime := time.Now()
+	echoer := func(thid int, done chan<- bool) {
+		random := rand.New(rand.NewSource(int64(thid)))
+		for i := 0; i < numIterations; i++ {
+			var keyNum int
+			if isRandom {
+				keyNum = random.Intn(numIterations * numThreads)
+			} else {
+				keyNum = thid*numIterations + i
+			}
+			key := fmt.Sprintf("%08d", keyNum)
+			_, status := dbm.Echo(key)
+			status.OrDie()
+			seq := i + 1
+			if thid == 0 && seq%(numIterations/500) == 0 {
+				fmt.Print(".")
+				if seq%(numIterations/10) == 0 {
+					fmt.Printf(" (%08d)\n", seq)
+				}
+			}
+		}
+		done <- true
+	}
+	dones := make([]chan bool, 0)
+	for i := 0; i < numThreads; i++ {
+		done := make(chan bool)
+		go echoer(i, done)
+		dones = append(dones, done)
+	}
+	for _, done := range dones {
+		<-done
+	}
+	dbm.Synchronize(false, tkrzw_rpc.ParseParams("")).OrDie()
+	endTime := time.Now()
+	elapsed := endTime.Sub(startTime).Seconds()
+	fmt.Printf("Echoing done: time=%.3f qps=%.0f\n",
+		elapsed, float64(numIterations*numThreads)/elapsed)
+	fmt.Println()
+	fmt.Println("Setting:")
+	startTime = time.Now()
 	setter := func(thid int, done chan<- bool) {
 		random := rand.New(rand.NewSource(int64(thid)))
 		for i := 0; i < numIterations; i++ {
@@ -63,7 +102,7 @@ func main() {
 		}
 		done <- true
 	}
-	dones := make([]chan bool, 0)
+	dones = make([]chan bool, 0)
 	for i := 0; i < numThreads; i++ {
 		done := make(chan bool)
 		go setter(i, done)
@@ -73,8 +112,8 @@ func main() {
 		<-done
 	}
 	dbm.Synchronize(false, tkrzw_rpc.ParseParams("")).OrDie()
-	endTime := time.Now()
-	elapsed := endTime.Sub(startTime).Seconds()
+	endTime = time.Now()
+	elapsed = endTime.Sub(startTime).Seconds()
 	fmt.Printf("Setting done: num_records=%d file_size=%d time=%.3f qps=%.0f\n",
 		dbm.CountSimple(), dbm.GetFileSizeSimple(),
 		elapsed, float64(numIterations*numThreads)/elapsed)
