@@ -78,7 +78,7 @@ apidoc :
 	echo 'div.param .name { font-family: monospace; }' >> api-doc/style.css
 	echo 'div.list { display: list-item; list-style: circle outside; }' >> api-doc/style.css
 	echo 'div.list { margin-left: 4.5ex; max-width: 48rem; }' >> api-doc/style.css
-	curl -s "http://localhost:8080/pkg/github.com/estraier/tkrzw-rpc/" |\
+	curl -s "http://localhost:8080/pkg/github.com/estraier/tkrzw-rpc-go/" |\
 	  grep -v '^<script.*</script>$$' |\
 	  sed -e 's/\/[a-z\/]*style.css/style.css/' \
 	    -e 's/\/pkg\/builtin\/#/#/' \
