@@ -738,10 +738,11 @@ func (self *RemoteDBM) PopFirstStr(retryWait float64) (string, string, *Status) 
 //
 // @param value The value of the record.
 // @param wtime The current wall time used to generate the key.  If it is None, the system clock is used.
+// @param notify If true, notification signal is sent.
 // @return The result status.
 //
 // The key is generated as an 8-bite big-endian binary string of the timestamp.  If there is an existing record matching the generated key, the key is regenerated and the attempt is repeated until it succeeds.
-func (self *RemoteDBM) PushLast(value interface{}, wtime float64) *Status {
+func (self *RemoteDBM) PushLast(value interface{}, wtime float64, notify bool) *Status {
 	if self.conn == nil {
 		return NewStatus2(StatusPreconditionError, "not opened connection")
 	}
@@ -752,6 +753,7 @@ func (self *RemoteDBM) PushLast(value interface{}, wtime float64) *Status {
 	request.DbmIndex = self.dbmIndex
 	request.Value = ToByteArray(value)
 	request.Wtime = wtime
+	request.Notify = notify
 	response, err := self.stub.PushLast(ctx, &request)
 	if err != nil {
 		return NewStatus2(StatusNetworkError, strGRPCError(err))

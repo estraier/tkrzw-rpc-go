@@ -544,8 +544,8 @@ func TestIterator(t *testing.T) {
 		CheckEq(t, StatusNotImplementedError, status)
 	}
 	CheckEq(t, StatusSuccess, dbm.Clear())
-	CheckEq(t, StatusSuccess, dbm.PushLast("one", 0))
-	CheckEq(t, StatusSuccess, dbm.PushLast("two", 0))
+	CheckEq(t, StatusSuccess, dbm.PushLast("one", 0, false))
+	CheckEq(t, StatusSuccess, dbm.PushLast("two", 0, true))
 	CheckEq(t, StatusSuccess, iter.First())
 	key, value, status := iter.Step()
 	CheckEq(t, StatusSuccess, status)
