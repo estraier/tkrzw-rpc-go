@@ -668,19 +668,88 @@ func (self *RemoteDBM) CompareExchangeMultiStr(
 	return makeStatusFromProto(response.Status)
 }
 
-// Removes all records.
+// Changes the key of a record.
 //
-// @return The result status.
-func (self *RemoteDBM) Clear() *Status {
+// @param old_key The old key of the record.
+// @param new_key The new key of the record.
+// @param overwrite Whether to overwrite the existing record of the new key.
+// @param copying Whether to retain the record of the old key.
+// @return The result status.  If there's no matching record to the old key, NOT_FOUND_ERROR is returned.  If the overwrite flag is false and there is an existing record of the new key, DUPLICATION ERROR is returned.
+//
+// This method is done atomically by ProcessMulti.  The other threads observe that the record has either the old key or the new key.  No intermediate states are observed.
+func (self *RemoteDBM) Rekey(oldKey interface{}, newKey interface{},
+	overwrite bool, copying bool) *Status {
 	if self.conn == nil {
 		return NewStatus2(StatusPreconditionError, "not opened connection")
 	}
 	ctx, cancel := context.WithTimeout(
 		context.Background(), time.Millisecond*time.Duration(self.timeout*1000))
 	defer cancel()
-	request := ClearRequest{}
+	request := RekeyRequest{}
 	request.DbmIndex = self.dbmIndex
-	response, err := self.stub.Clear(ctx, &request)
+	request.OldKey = ToByteArray(oldKey)
+	request.NewKey = ToByteArray(newKey)
+	request.Overwrite = overwrite
+	request.Copying = copying
+	response, err := self.stub.Rekey(ctx, &request)
+	if err != nil {
+		return NewStatus2(StatusNetworkError, strGRPCError(err))
+	}
+	return makeStatusFromProto(response.Status)
+}
+
+// Gets the first record and removes it.
+//
+// @return The key and the value of the first record, and the result status.
+func (self *RemoteDBM) PopFirst() ([]byte, []byte, *Status) {
+	if self.conn == nil {
+		return nil, nil, NewStatus2(StatusPreconditionError, "not opened connection")
+	}
+	ctx, cancel := context.WithTimeout(
+		context.Background(), time.Millisecond*time.Duration(self.timeout*1000))
+	defer cancel()
+	request := PopFirstRequest{}
+	request.DbmIndex = self.dbmIndex
+	response, err := self.stub.PopFirst(ctx, &request)
+	if err != nil {
+		return nil, nil, NewStatus2(StatusNetworkError, strGRPCError(err))
+	}
+	if StatusCode(response.Status.Code) == StatusSuccess {
+		return response.Key, response.Value, makeStatusFromProto(response.Status)
+	}
+	return nil, nil, makeStatusFromProto(response.Status)
+}
+
+// Gets the first record as strings and removes it.
+//
+// @return The key and the value of the first record, and the result status.
+func (self *RemoteDBM) PopFirstStr() (string, string, *Status) {
+	key, value, status := self.PopFirst()
+	if status.GetCode() == StatusSuccess {
+		return *(*string)(unsafe.Pointer(&key)), *(*string)(unsafe.Pointer(&value)), status
+	}
+	return "", "", status
+}
+
+// Adds a record with a key of the current timestamp.
+//
+// @param value The value of the record.
+// @param wtime The current wall time used to generate the key.  If it is None, the system clock is used.
+// @return The result status.
+//
+// The key is generated as an 8-bite big-endian binary string of the timestamp.  If there is an existing record matching the generated key, the key is regenerated and the attempt is repeated until it succeeds.
+func (self *RemoteDBM) PushLast(value interface{}, wtime float64) *Status {
+	if self.conn == nil {
+		return NewStatus2(StatusPreconditionError, "not opened connection")
+	}
+	ctx, cancel := context.WithTimeout(
+		context.Background(), time.Millisecond*time.Duration(self.timeout*1000))
+	defer cancel()
+	request := PushLastRequest{}
+	request.DbmIndex = self.dbmIndex
+	request.Value = ToByteArray(value)
+	request.Wtime = wtime
+	response, err := self.stub.PushLast(ctx, &request)
 	if err != nil {
 		return NewStatus2(StatusNetworkError, strGRPCError(err))
 	}
@@ -767,6 +836,25 @@ func (self *RemoteDBM) GetFileSizeSimple() int64 {
 		return response.FileSize
 	}
 	return -1
+}
+
+// Removes all records.
+//
+// @return The result status.
+func (self *RemoteDBM) Clear() *Status {
+	if self.conn == nil {
+		return NewStatus2(StatusPreconditionError, "not opened connection")
+	}
+	ctx, cancel := context.WithTimeout(
+		context.Background(), time.Millisecond*time.Duration(self.timeout*1000))
+	defer cancel()
+	request := ClearRequest{}
+	request.DbmIndex = self.dbmIndex
+	response, err := self.stub.Clear(ctx, &request)
+	if err != nil {
+		return NewStatus2(StatusNetworkError, strGRPCError(err))
+	}
+	return makeStatusFromProto(response.Status)
 }
 
 // Rebuilds the entire database.

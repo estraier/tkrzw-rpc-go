@@ -31,6 +31,9 @@ type DBMServiceClient interface {
 	CompareExchange(ctx context.Context, in *CompareExchangeRequest, opts ...grpc.CallOption) (*CompareExchangeResponse, error)
 	Increment(ctx context.Context, in *IncrementRequest, opts ...grpc.CallOption) (*IncrementResponse, error)
 	CompareExchangeMulti(ctx context.Context, in *CompareExchangeMultiRequest, opts ...grpc.CallOption) (*CompareExchangeMultiResponse, error)
+	Rekey(ctx context.Context, in *RekeyRequest, opts ...grpc.CallOption) (*RekeyResponse, error)
+	PopFirst(ctx context.Context, in *PopFirstRequest, opts ...grpc.CallOption) (*PopFirstResponse, error)
+	PushLast(ctx context.Context, in *PushLastRequest, opts ...grpc.CallOption) (*PushLastResponse, error)
 	Count(ctx context.Context, in *CountRequest, opts ...grpc.CallOption) (*CountResponse, error)
 	GetFileSize(ctx context.Context, in *GetFileSizeRequest, opts ...grpc.CallOption) (*GetFileSizeResponse, error)
 	Clear(ctx context.Context, in *ClearRequest, opts ...grpc.CallOption) (*ClearResponse, error)
@@ -163,6 +166,33 @@ func (c *dBMServiceClient) Increment(ctx context.Context, in *IncrementRequest, 
 func (c *dBMServiceClient) CompareExchangeMulti(ctx context.Context, in *CompareExchangeMultiRequest, opts ...grpc.CallOption) (*CompareExchangeMultiResponse, error) {
 	out := new(CompareExchangeMultiResponse)
 	err := c.cc.Invoke(ctx, "/tkrzw_rpc.DBMService/CompareExchangeMulti", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dBMServiceClient) Rekey(ctx context.Context, in *RekeyRequest, opts ...grpc.CallOption) (*RekeyResponse, error) {
+	out := new(RekeyResponse)
+	err := c.cc.Invoke(ctx, "/tkrzw_rpc.DBMService/Rekey", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dBMServiceClient) PopFirst(ctx context.Context, in *PopFirstRequest, opts ...grpc.CallOption) (*PopFirstResponse, error) {
+	out := new(PopFirstResponse)
+	err := c.cc.Invoke(ctx, "/tkrzw_rpc.DBMService/PopFirst", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dBMServiceClient) PushLast(ctx context.Context, in *PushLastRequest, opts ...grpc.CallOption) (*PushLastResponse, error) {
+	out := new(PushLastResponse)
+	err := c.cc.Invoke(ctx, "/tkrzw_rpc.DBMService/PushLast", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -352,6 +382,9 @@ type DBMServiceServer interface {
 	CompareExchange(context.Context, *CompareExchangeRequest) (*CompareExchangeResponse, error)
 	Increment(context.Context, *IncrementRequest) (*IncrementResponse, error)
 	CompareExchangeMulti(context.Context, *CompareExchangeMultiRequest) (*CompareExchangeMultiResponse, error)
+	Rekey(context.Context, *RekeyRequest) (*RekeyResponse, error)
+	PopFirst(context.Context, *PopFirstRequest) (*PopFirstResponse, error)
+	PushLast(context.Context, *PushLastRequest) (*PushLastResponse, error)
 	Count(context.Context, *CountRequest) (*CountResponse, error)
 	GetFileSize(context.Context, *GetFileSizeRequest) (*GetFileSizeResponse, error)
 	Clear(context.Context, *ClearRequest) (*ClearResponse, error)
@@ -408,6 +441,15 @@ func (UnimplementedDBMServiceServer) Increment(context.Context, *IncrementReques
 }
 func (UnimplementedDBMServiceServer) CompareExchangeMulti(context.Context, *CompareExchangeMultiRequest) (*CompareExchangeMultiResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CompareExchangeMulti not implemented")
+}
+func (UnimplementedDBMServiceServer) Rekey(context.Context, *RekeyRequest) (*RekeyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Rekey not implemented")
+}
+func (UnimplementedDBMServiceServer) PopFirst(context.Context, *PopFirstRequest) (*PopFirstResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PopFirst not implemented")
+}
+func (UnimplementedDBMServiceServer) PushLast(context.Context, *PushLastRequest) (*PushLastResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PushLast not implemented")
 }
 func (UnimplementedDBMServiceServer) Count(context.Context, *CountRequest) (*CountResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Count not implemented")
@@ -689,6 +731,60 @@ func _DBMService_CompareExchangeMulti_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DBMService_Rekey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RekeyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DBMServiceServer).Rekey(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/tkrzw_rpc.DBMService/Rekey",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DBMServiceServer).Rekey(ctx, req.(*RekeyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DBMService_PopFirst_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PopFirstRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DBMServiceServer).PopFirst(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/tkrzw_rpc.DBMService/PopFirst",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DBMServiceServer).PopFirst(ctx, req.(*PopFirstRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DBMService_PushLast_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PushLastRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DBMServiceServer).PushLast(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/tkrzw_rpc.DBMService/PushLast",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DBMServiceServer).PushLast(ctx, req.(*PushLastRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _DBMService_Count_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CountRequest)
 	if err := dec(in); err != nil {
@@ -964,6 +1060,18 @@ var DBMService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CompareExchangeMulti",
 			Handler:    _DBMService_CompareExchangeMulti_Handler,
+		},
+		{
+			MethodName: "Rekey",
+			Handler:    _DBMService_Rekey_Handler,
+		},
+		{
+			MethodName: "PopFirst",
+			Handler:    _DBMService_PopFirst_Handler,
+		},
+		{
+			MethodName: "PushLast",
+			Handler:    _DBMService_PushLast_Handler,
 		},
 		{
 			MethodName: "Count",

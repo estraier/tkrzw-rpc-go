@@ -477,4 +477,58 @@ func (self *Iterator) Remove() *Status {
 	return makeStatusFromProto(response.Status)
 }
 
+// Gets the current record and moves the iterator to the next record.
+//
+// @return The key and the value of the current record, and the result status.
+func (self *Iterator) Step() ([]byte, []byte, *Status) {
+	if self.dbm == nil {
+		return nil, nil, NewStatus2(StatusPreconditionError, "destructed iterator")
+	}
+	if self.dbm.conn == nil {
+		return nil, nil, NewStatus2(StatusPreconditionError, "not opened connection")
+	}
+	request := IterateRequest{}
+	request.DbmIndex = self.dbm.dbmIndex
+	request.Operation = IterateRequest_OP_STEP
+	err := self.stream.Send(&request)
+	if err != nil {
+		return nil, nil, NewStatus2(StatusNetworkError, strGRPCError(err))
+	}
+	response, err := self.stream.Recv()
+	if err != nil {
+		return nil, nil, NewStatus2(StatusNetworkError, strGRPCError(err))
+	}
+	if StatusCode(response.Status.Code) == StatusSuccess {
+		return response.Key, response.Value, makeStatusFromProto(response.Status)
+	}
+	return nil, nil, makeStatusFromProto(response.Status)
+}
+
+// Gets the current record and moves the iterator to the next record, as strings.
+//
+// @return The key and the value of the current record, and the result status.
+func (self *Iterator) StepStr() (string, string, *Status) {
+	if self.dbm == nil {
+		return "", "", NewStatus2(StatusPreconditionError, "destructed iterator")
+	}
+	if self.dbm.conn == nil {
+		return "", "", NewStatus2(StatusPreconditionError, "not opened connection")
+	}
+	request := IterateRequest{}
+	request.DbmIndex = self.dbm.dbmIndex
+	request.Operation = IterateRequest_OP_STEP
+	err := self.stream.Send(&request)
+	if err != nil {
+		return "", "", NewStatus2(StatusNetworkError, strGRPCError(err))
+	}
+	response, err := self.stream.Recv()
+	if err != nil {
+		return "", "", NewStatus2(StatusNetworkError, strGRPCError(err))
+	}
+	if StatusCode(response.Status.Code) == StatusSuccess {
+		return ToString(response.Key), ToString(response.Value), makeStatusFromProto(response.Status)
+	}
+	return "", "", makeStatusFromProto(response.Status)
+}
+
 // END OF FILE
