@@ -670,8 +670,8 @@ func (self *RemoteDBM) CompareExchangeMultiStr(
 
 // Changes the key of a record.
 //
-// @param old_key The old key of the record.
-// @param new_key The new key of the record.
+// @param oldKey The old key of the record.
+// @param newKey The new key of the record.
 // @param overwrite Whether to overwrite the existing record of the new key.
 // @param copying Whether to retain the record of the old key.
 // @return The result status.  If there's no matching record to the old key, NOT_FOUND_ERROR is returned.  If the overwrite flag is false and there is an existing record of the new key, DUPLICATION ERROR is returned.
@@ -700,8 +700,9 @@ func (self *RemoteDBM) Rekey(oldKey interface{}, newKey interface{},
 
 // Gets the first record and removes it.
 //
+// @param retryWait The maximum wait time in seconds before retrying.  If it is zero, no retry is done.  If it is positive, retry is done and wait for the notifications of the next update for the time at most.
 // @return The key and the value of the first record, and the result status.
-func (self *RemoteDBM) PopFirst() ([]byte, []byte, *Status) {
+func (self *RemoteDBM) PopFirst(retryWait float64) ([]byte, []byte, *Status) {
 	if self.conn == nil {
 		return nil, nil, NewStatus2(StatusPreconditionError, "not opened connection")
 	}
@@ -710,6 +711,7 @@ func (self *RemoteDBM) PopFirst() ([]byte, []byte, *Status) {
 	defer cancel()
 	request := PopFirstRequest{}
 	request.DbmIndex = self.dbmIndex
+	request.RetryWait = retryWait
 	response, err := self.stub.PopFirst(ctx, &request)
 	if err != nil {
 		return nil, nil, NewStatus2(StatusNetworkError, strGRPCError(err))
@@ -722,9 +724,10 @@ func (self *RemoteDBM) PopFirst() ([]byte, []byte, *Status) {
 
 // Gets the first record as strings and removes it.
 //
+// @param retryWait The maximum wait time in seconds before retrying.  If it is zero, no retry is done.  If it is positive, retry is done and wait for the notifications of the next update for the time at most.
 // @return The key and the value of the first record, and the result status.
-func (self *RemoteDBM) PopFirstStr() (string, string, *Status) {
-	key, value, status := self.PopFirst()
+func (self *RemoteDBM) PopFirstStr(retryWait float64) (string, string, *Status) {
+	key, value, status := self.PopFirst(retryWait)
 	if status.GetCode() == StatusSuccess {
 		return *(*string)(unsafe.Pointer(&key)), *(*string)(unsafe.Pointer(&value)), status
 	}
