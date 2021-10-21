@@ -68,7 +68,8 @@ fmt :
 apidoc :
 	rm -rf api-doc tmp-doc
 	mkdir tmp-doc ; cp go.mod doc.go util.go status.go remote_dbm.go iterator.go tmp-doc
-	cd tmp-doc ; godoc -http "localhost:8080" -play & sleep 1
+	cd tmp-doc ; PATH=$$PATH:$$HOME/go/bin:$$HOME/.local/bin \
+	  godoc -http "localhost:8080" -play -goroot /usr/share/go & sleep 2
 	mkdir api-doc
 	curl -s "http://localhost:8080/lib/godoc/style.css" > api-doc/style.css
 	echo '#topbar { display: none; }' >> api-doc/style.css
