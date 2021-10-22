@@ -1,15 +1,15 @@
-# Makefile for the wicked testing for Tkrzw-RPC
+# Makefile for sample programs for Tkrzw
 
 GOCMD := go
 RUNENV := LD_LIBRARY_PATH=.:/lib:/usr/lib:/usr/local/lib:$(HOME)/lib
 
 build :
 	$(RUNENV) $(GOCMD) get
-	$(RUNENV) $(GOCMD) build wicked.go
+	$(RUNENV) $(GOCMD) build example2.go
 
 run :
 	$(RUNENV) $(GOCMD) get
-	$(RUNENV) $(GOCMD) run wicked.go --iter 5000 --threads 3
+	$(RUNENV) $(GOCMD) run example2.go
 
 vet :
 	$(RUNENV) $(GOCMD) get
@@ -20,4 +20,5 @@ fmt :
 	$(RUNENV) $(GOCMD) fmt
 
 clean :
-	rm -rf wicked casket* *.tkh *.tkt *.tks *~ hoge moge tako ika uni go.sum
+	rm -rf casket* *.tkh *.tkt *.tks *~ hoge moge tako ika uni \
+	  example2 go.sum

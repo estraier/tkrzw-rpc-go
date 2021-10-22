@@ -1,4 +1,4 @@
-module example1
+module github.com/estraier/tkrzw-rpc-go/example2
 
 go 1.14
 

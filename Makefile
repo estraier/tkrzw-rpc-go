@@ -10,7 +10,10 @@ RUNENV = LD_LIBRARY_PATH=.:/lib:/usr/lib:/usr/local/lib:$(HOME)/lib
 MODULEFILES = tkrzw_rpc_pb.rb tkrzw_rpc.rb tkrzw_rpc_services_pb.rb
 
 all :
+	$(RUNENV) $(GOCMD) get
 	$(RUNENV) $(GOCMD) build
+	[ ! -f perf/Makefile ] || cd perf && $(MAKE)
+	[ ! -f wicked/Makefile ] || cd wicked && $(MAKE)
 	@printf '\n'
 	@printf '#================================================================\n'
 	@printf '# Ready to install.\n'
@@ -31,7 +34,8 @@ dist :
 	$(MAKE) fmt
 	[ ! -f perf/Makefile ] || cd perf && $(MAKE) fmt
 	[ ! -f wicked/Makefile ] || cd wicked && $(MAKE) fmt
-	[ ! -f example/Makefile ] || cd example && $(MAKE) fmt
+	[ ! -f example1/Makefile ] || cd example1 && $(MAKE) fmt
+	[ ! -f example2/Makefile ] || cd example2 && $(MAKE) fmt
 	$(MAKE) distclean
 	rm -Rf "../$(PACKAGEDIR)" "../$(PACKAGETGZ)"
 	cd .. && cp -R tkrzw-rpc-go $(PACKAGEDIR) && \
@@ -42,7 +46,8 @@ dist :
 distclean : clean apidocclean
 	[ ! -f perf/Makefile ] || cd perf && $(MAKE) clean
 	[ ! -f wicked/Makefile ] || cd wicked && $(MAKE) clean
-	[ ! -f example/Makefile ] || cd example && $(MAKE) clean
+	[ ! -f example1/Makefile ] || cd example1 && $(MAKE) clean
+	[ ! -f example2/Makefile ] || cd example2 && $(MAKE) clean
 
 check : test runperf runwicked
 	@printf '\n'
@@ -51,6 +56,7 @@ check : test runperf runwicked
 	@printf '#================================================================\n'
 
 test :
+	$(RUNENV) $(GOCMD) get
 	$(RUNENV) $(GOCMD) test -v
 
 runperf :
@@ -60,9 +66,11 @@ runwicked :
 	[ ! -f wicked/Makefile ] || cd wicked && $(MAKE) run
 
 vet :
+	$(RUNENV) $(GOCMD) get
 	$(RUNENV) $(GOCMD) vet
 
 fmt :
+	$(RUNENV) $(GOCMD) get
 	$(RUNENV) $(GOCMD) fmt
 
 apidoc :
