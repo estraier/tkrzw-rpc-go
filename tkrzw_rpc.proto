@@ -11,7 +11,7 @@
 
 syntax = "proto3";
 
-option go_package = "github.com/estraier/tkrzw-rpc";
+option go_package = "github.com/estraier/tkrzw-rpc;tkrzw_rpc";
 
 package tkrzw_rpc;
 
