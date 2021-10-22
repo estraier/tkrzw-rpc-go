@@ -22,6 +22,8 @@ all :
 clean :
 	rm -rf casket casket* *~ *.tmp *.tkh *.tkt *.tks *.flat *.log *.so \
 	  hoge moge tako ika uni go.sum
+	[ ! -f perf/Makefile ] || cd perf && $(MAKE) clean
+	[ ! -f wicked/Makefile ] || cd wicked && $(MAKE) clean
 
 install :
 	@printf '\n'
