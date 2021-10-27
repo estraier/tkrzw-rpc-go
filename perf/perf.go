@@ -22,6 +22,7 @@ import (
 )
 
 var flagAddress = flag.String("address", "localhost:1978", "the address of the database server")
+var flagAuthConfig = flag.String("auth", "", "enables authentication with the configuration.")
 var flagNumIterations = flag.Int("iter", 10000, "the number of iterations")
 var flagNumThreads = flag.Int("threads", 1, "the number of threads")
 var flagIsRandom = flag.Bool("random", false, "whether to use random keys")
@@ -29,6 +30,7 @@ var flagIsRandom = flag.Bool("random", false, "whether to use random keys")
 func main() {
 	flag.Parse()
 	address := *flagAddress
+	auth_config := *flagAuthConfig
 	numIterations := *flagNumIterations
 	numThreads := *flagNumThreads
 	isRandom := *flagIsRandom
@@ -38,7 +40,7 @@ func main() {
 	fmt.Printf("is_random: %t\n", isRandom)
 	fmt.Println()
 	dbm := tkrzw_rpc.NewRemoteDBM()
-	dbm.Connect(address, -1).OrDie()
+	dbm.Connect(address, -1, auth_config).OrDie()
 	dbm.Clear().OrDie()
 	fmt.Println("Echoing:")
 	startTime := time.Now()

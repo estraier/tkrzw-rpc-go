@@ -21,7 +21,7 @@ import (
 func main() {
 	// Prepares the database.
 	dbm := tkrzw_rpc.NewRemoteDBM()
-	dbm.Connect("127.0.0.1:1978", -1)
+	dbm.Connect("127.0.0.1:1978", -1, "")
 
 	// Sets records.
 	// Keys and values are implicitly converted into bytes.

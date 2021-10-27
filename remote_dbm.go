@@ -15,10 +15,15 @@ package tkrzw_rpc
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
+	"io/ioutil"
+	"strings"
 	"time"
 	"unsafe"
 )
@@ -82,8 +87,9 @@ func (self *RemoteDBM) String() string {
 //
 // @param address The address or the host name of the server and its port number.  For IPv4 address, it's like "127.0.0.1:1978".  For IPv6, it's like "[::1]:1978".  For UNIX domain sockets, it's like "unix:/path/to/file".
 // @param timeout The timeout in seconds for connection and each operation.  Negative means unlimited.
+// @param auth_config The authentication configuration.  It it is empty, no authentication is done.  If it begins with "ssl:", the SSL authentication is done.  Key-value parameters in "key=value,key=value,..." format comes next.  For SSL, "key", "cert", and "root" parameters specify the paths of the client private key file, the client certificate file, and the root CA certificate file respectively.
 // @return The result status.
-func (self *RemoteDBM) Connect(address string, timeout float64) *Status {
+func (self *RemoteDBM) Connect(address string, timeout float64, auth_config string) *Status {
 	if self.conn != nil {
 		return NewStatus2(StatusPreconditionError, "opened connection")
 	}
@@ -91,7 +97,59 @@ func (self *RemoteDBM) Connect(address string, timeout float64) *Status {
 		timeout = float64(1 << 30)
 	}
 	deadline := time.Now().Add(time.Millisecond * time.Duration(timeout*1000))
-	conn, err := grpc.Dial(address, grpc.WithInsecure())
+	var dialOption grpc.DialOption
+	if len(auth_config) > 0 {
+		if strings.HasPrefix(auth_config, "ssl:") {
+			var keyPath, certPath, rootPath string
+			for _, field := range strings.Split(auth_config[4:], ",") {
+				columns := strings.Split(field, "=")
+				if len(columns) == 2 {
+					if columns[0] == "key" {
+						keyPath = columns[1]
+					} else if columns[0] == "cert" {
+						certPath = columns[1]
+					} else if columns[0] == "root" {
+						rootPath = columns[1]
+					}
+				}
+			}
+			if len(keyPath) == 0 {
+				return NewStatus2(StatusInvalidArgumentError, "client private key unspecified")
+			} else if len(certPath) == 0 {
+				return NewStatus2(StatusInvalidArgumentError, "client certificate unspecified")
+			} else if len(rootPath) == 0 {
+				return NewStatus2(StatusInvalidArgumentError, "root certificate unspecified")
+			}
+			keyData, err := ioutil.ReadFile(keyPath)
+			if err != nil {
+				return NewStatus2(StatusInvalidArgumentError, "client private key missing")
+			}
+			certData, err := ioutil.ReadFile(certPath)
+			if err != nil {
+				return NewStatus2(StatusInvalidArgumentError, "client certificate missing")
+			}
+			rootData, err := ioutil.ReadFile(rootPath)
+			if err != nil {
+				return NewStatus2(StatusInvalidArgumentError, "root certificate missing")
+			}
+			peerData, err := tls.X509KeyPair(certData, keyData)
+			if err != nil {
+				return NewStatus2(StatusInvalidArgumentError, err.Error())
+			}
+			rootPool := x509.NewCertPool()
+			rootPool.AppendCertsFromPEM(rootData)
+			creds := credentials.NewTLS(&tls.Config{
+				Certificates: []tls.Certificate{peerData},
+				ClientAuth:   tls.RequestClientCert,
+			})
+			dialOption = grpc.WithTransportCredentials(creds)
+		} else {
+			return NewStatus2(StatusInvalidArgumentError, "opened connection")
+		}
+	} else {
+		dialOption = grpc.WithInsecure()
+	}
+	conn, err := grpc.Dial(address, dialOption)
 	if err != nil {
 		return NewStatus2(StatusNetworkError, strGRPCError(err))
 	}

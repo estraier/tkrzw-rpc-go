@@ -311,7 +311,7 @@ func TestStatus(t *testing.T) {
 func TestRemoteDBM(t *testing.T) {
 	dbm := NewRemoteDBM()
 	CheckTrue(t, strings.Index(dbm.String(), ":unopened>") >= 0)
-	status := dbm.Connect("localhost:1978", -1)
+	status := dbm.Connect("localhost:1978", -1, "")
 	CheckEq(t, StatusSuccess, status)
 	CheckTrue(t, strings.Index(dbm.String(), ":opened>") >= 0)
 	CheckEq(t, StatusSuccess, dbm.SetDBMIndex(-1))
@@ -436,7 +436,7 @@ func TestRemoteDBM(t *testing.T) {
 
 func TestIterator(t *testing.T) {
 	dbm := NewRemoteDBM()
-	status := dbm.Connect("localhost:1978", -1)
+	status := dbm.Connect("localhost:1978", -1, "")
 	CheckEq(t, StatusSuccess, status)
 	CheckEq(t, StatusSuccess, dbm.Clear())
 	for i := 0; i < 10; i++ {
@@ -573,7 +573,7 @@ func TestIterator(t *testing.T) {
 
 func TestThread(t *testing.T) {
 	dbm := NewRemoteDBM()
-	status := dbm.Connect("localhost:1978", -1)
+	status := dbm.Connect("localhost:1978", -1, "")
 	CheckEq(t, StatusSuccess, status)
 	CheckEq(t, StatusSuccess, dbm.Clear())
 	numIterations := 1000

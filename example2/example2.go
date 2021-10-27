@@ -24,7 +24,7 @@ func main() {
 	// The method OrDie causes panic if the status is not success.
 	// You should write your own error handling in large scale programs.
 	dbm := tkrzw_rpc.NewRemoteDBM()
-	dbm.Connect("localhost:1978", 10).OrDie()
+	dbm.Connect("localhost:1978", 10, "").OrDie()
 
 	// Closes the connection for sure and checks the error too.
 	defer func() { dbm.Disconnect().OrDie() }()
