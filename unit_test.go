@@ -252,6 +252,32 @@ func TestToFloat(t *testing.T) {
 	CheckEq(t, -255.5, ToFloat(float64(-255.5)))
 }
 
+func TestSpecialData(t *testing.T) {
+	myAnyBytes := make([]byte, len(AnyBytes))
+	myAnyString := string([]byte(AnyString))
+	CheckFalse(t, IsAnyData(0))
+	CheckFalse(t, IsAnyData(nil))
+	CheckFalse(t, IsAnyData(""))
+	CheckTrue(t, IsAnyData(AnyBytes))
+	CheckTrue(t, IsAnyData(AnyString))
+	copy(myAnyBytes, AnyBytes)
+	CheckFalse(t, IsAnyData(myAnyBytes))
+	CheckFalse(t, IsAnyData(myAnyString))
+	CheckTrue(t, IsAnyBytes(AnyBytes))
+	CheckFalse(t, IsAnyBytes(myAnyBytes))
+	CheckTrue(t, IsAnyString(AnyString))
+	CheckFalse(t, IsAnyString(myAnyString))
+	myNilString := string([]byte(NilString))
+	CheckFalse(t, IsNilData(0))
+	CheckTrue(t, IsNilData(nil))
+	CheckFalse(t, IsNilData(""))
+	CheckTrue(t, IsNilData(NilString))
+	CheckFalse(t, IsNilData(myNilString))
+	CheckFalse(t, IsNilString(""))
+	CheckTrue(t, IsNilString(NilString))
+	CheckFalse(t, IsNilString(myNilString))
+}
+
 func TestMiscUtils(t *testing.T) {
 	params := ParseParams("a=A, bb = BBB, ccc=")
 	CheckEq(t, 3, len(params))
@@ -380,6 +406,23 @@ func TestRemoteDBM(t *testing.T) {
 	CheckEq(t, StatusSuccess, dbm.CompareExchange("one", nil, "hello"))
 	CheckEq(t, "hello", dbm.GetSimple("one", "*"))
 	CheckEq(t, StatusInfeasibleError, dbm.CompareExchange("one", nil, "hello"))
+	CheckEq(t, StatusInfeasibleError, dbm.CompareExchange("xyz", AnyString, AnyString))
+	CheckEq(t, StatusSuccess, dbm.CompareExchange("xyz", nil, "abc"))
+	CheckEq(t, StatusSuccess, dbm.CompareExchange("xyz", AnyBytes, AnyBytes))
+	CheckEq(t, "abc", dbm.GetSimple("xyz", "*"))
+	CheckEq(t, StatusSuccess, dbm.CompareExchange("xyz", AnyBytes, "def"))
+	CheckEq(t, "def", dbm.GetSimple("xyz", "*"))
+	CheckEq(t, StatusSuccess, dbm.CompareExchange("xyz", AnyString, nil))
+	CheckEq(t, "*", dbm.GetSimple("xyz", "*"))
+	actual, status := dbm.CompareExchangeAndGetStr("xyz", nil, "123")
+	CheckEq(t, StatusSuccess, status)
+	CheckTrue(t, IsNilString(actual))
+	actual, status = dbm.CompareExchangeAndGetStr("xyz", AnyString, AnyString)
+	CheckEq(t, StatusSuccess, status)
+	CheckEq(t, "123", actual)
+	actual, status = dbm.CompareExchangeAndGetStr("xyz", AnyString, NilString)
+	CheckEq(t, StatusSuccess, status)
+	CheckEq(t, "123", actual)
 	set1 := []KeyValuePair{KeyValuePair{[]byte("one"), []byte("hello")},
 		KeyValuePair{[]byte("two"), []byte("second:second")}}
 	set2 := []KeyValuePair{KeyValuePair{[]byte("one"), nil},
@@ -394,7 +437,7 @@ func TestRemoteDBM(t *testing.T) {
 	CheckEq(t, "ni", dbm.GetSimple("two", "*"))
 	CheckEq(t, StatusInfeasibleError, dbm.CompareExchangeMulti(set2, set3))
 	strSet1 := []KeyValueStrPair{KeyValueStrPair{"one", "ichi"}, KeyValueStrPair{"two", "ni"}}
-	strSet2 := []KeyValueStrPair{KeyValueStrPair{"one", ""}, KeyValueStrPair{"two", ""}}
+	strSet2 := []KeyValueStrPair{KeyValueStrPair{"one", NilString}, KeyValueStrPair{"two", NilString}}
 	strSet3 := []KeyValueStrPair{KeyValueStrPair{"one", "first"}, KeyValueStrPair{"two", "second"}}
 	CheckEq(t, StatusSuccess, dbm.CompareExchangeMultiStr(strSet1, strSet2))
 	CheckEq(t, "*", dbm.GetSimple("one", "*"))
@@ -403,6 +446,20 @@ func TestRemoteDBM(t *testing.T) {
 	CheckEq(t, "first", dbm.GetSimple("one", "*"))
 	CheckEq(t, "second", dbm.GetSimple("two", "*"))
 	CheckEq(t, StatusInfeasibleError, dbm.CompareExchangeMultiStr(strSet2, strSet3))
+	CheckEq(t, StatusInfeasibleError, dbm.CompareExchangeMultiStr(
+		[]KeyValueStrPair{{"xyz", AnyString}},
+		[]KeyValueStrPair{{"xyz", "abc"}}))
+	CheckEq(t, StatusSuccess, dbm.CompareExchangeMultiStr(
+		[]KeyValueStrPair{{"xyz", NilString}},
+		[]KeyValueStrPair{{"xyz", "abc"}}))
+	CheckEq(t, StatusSuccess, dbm.CompareExchangeMultiStr(
+		[]KeyValueStrPair{{"xyz", "abc"}},
+		[]KeyValueStrPair{{"xyz", "def"}}))
+	CheckEq(t, "def", dbm.GetStrSimple("xyz", "*"))
+	CheckEq(t, StatusSuccess, dbm.CompareExchangeMultiStr(
+		[]KeyValueStrPair{{"xyz", "def"}},
+		[]KeyValueStrPair{{"xyz", NilString}}))
+	CheckEq(t, "*", dbm.GetStrSimple("xyz", "*"))
 	incValue, status := dbm.Increment("num", 5, 100)
 	CheckEq(t, StatusSuccess, status)
 	CheckEq(t, 105, incValue)

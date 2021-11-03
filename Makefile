@@ -1,7 +1,7 @@
 # Makefile for Tkrzw-RPC for Go
 
 PACKAGE = tkrzw-rpc-go
-VERSION = 0.1.2
+VERSION = 0.1.3
 PACKAGEDIR = $(PACKAGE)-$(VERSION)
 PACKAGETGZ = $(PACKAGE)-$(VERSION).tar.gz
 
@@ -101,7 +101,7 @@ apidoc :
 apidocclean :
 	rm -rf api-doc tmp-doc
 
-pbgo : tkrzw_rpc.proto
+protocode : tkrzw_rpc.proto
 	PATH="$$PATH:$$($(GOCMD) env GOPATH)/bin" ; export PATH ; \
 	  protoc --go_out=. --go_opt=paths=source_relative \
 	    --go-grpc_out=. --go-grpc_opt=paths=source_relative tkrzw_rpc.proto

@@ -591,8 +591,8 @@ func (self *RemoteDBM) AppendMultiStr(records map[string]string, delim interface
 // Compares the value of a record and exchanges if the condition meets.
 //
 // @param key The key of the record.
-// @param expected The expected value.  If it is nil, no existing record is expected.
-// @param desired The desired value.  If it is nil, the record is to be removed.
+// @param expected The expected value.  If it is nil or NilString, no existing record is expected.  If it is AnyBytes or AnyString, an existing record with any value is expacted.
+// @param desired The desired value.  If it is nil or NilString, the record is to be removed.  If it is AnyBytes or AnyString, no update is done.
 // @return The result status.  If the condition doesn't meet, StatusInfeasibleError is returned.
 func (self *RemoteDBM) CompareExchange(
 	key interface{}, expected interface{}, desired interface{}) *Status {
@@ -605,19 +605,90 @@ func (self *RemoteDBM) CompareExchange(
 	request := CompareExchangeRequest{}
 	request.DbmIndex = self.dbmIndex
 	request.Key = ToByteArray(key)
-	if expected != nil {
-		request.ExpectedExistence = true
-		request.ExpectedValue = ToByteArray(expected)
+	if !IsNilData(expected) {
+		if IsAnyData(expected) {
+			request.ExpectedExistence = true
+			request.ExpectAnyValue = true
+		} else {
+			request.ExpectedExistence = true
+			request.ExpectedValue = ToByteArray(expected)
+		}
 	}
-	if desired != nil {
-		request.DesiredExistence = true
-		request.DesiredValue = ToByteArray(desired)
+	if !IsNilData(desired) {
+		if IsAnyData(desired) {
+			request.DesireNoUpdate = true
+		} else {
+			request.DesiredExistence = true
+			request.DesiredValue = ToByteArray(desired)
+		}
 	}
 	response, err := self.stub.CompareExchange(ctx, &request)
 	if err != nil {
 		return NewStatus2(StatusNetworkError, strGRPCError(err))
 	}
 	return makeStatusFromProto(response.Status)
+}
+
+// Does compare-and-exchange and/or gets the old value of the record.
+//
+// @param key The key of the record.
+// @param expected The expected value.  If it is nil or NilString, no existing record is expected.  If it is AnyBytes or AnyString, an existing record with any value is expacted.
+// @param desired The desired value.  If it is nil or NilString, the record is to be removed.  If it is AnyBytes or AnyString, no update is done.
+// @return The old value and the result status.  If the condition doesn't meet, the state is INFEASIBLE_ERROR.  If there's no existing record, the value is nil.
+func (self *RemoteDBM) CompareExchangeAndGet(
+	key interface{}, expected interface{}, desired interface{}) ([]byte, *Status) {
+	if self.conn == nil {
+		return nil, NewStatus2(StatusPreconditionError, "not opened connection")
+	}
+	ctx, cancel := context.WithTimeout(
+		context.Background(), time.Millisecond*time.Duration(self.timeout*1000))
+	defer cancel()
+	request := CompareExchangeRequest{}
+	request.DbmIndex = self.dbmIndex
+	request.Key = ToByteArray(key)
+	if !IsNilData(expected) {
+		if IsAnyData(expected) {
+			request.ExpectedExistence = true
+			request.ExpectAnyValue = true
+		} else {
+			request.ExpectedExistence = true
+			request.ExpectedValue = ToByteArray(expected)
+		}
+	}
+	if !IsNilData(desired) {
+		if IsAnyData(desired) {
+			request.DesireNoUpdate = true
+		} else {
+			request.DesiredExistence = true
+			request.DesiredValue = ToByteArray(desired)
+		}
+	}
+	request.GetActual = true
+	response, err := self.stub.CompareExchange(ctx, &request)
+	if err != nil {
+		return nil, NewStatus2(StatusNetworkError, strGRPCError(err))
+	}
+	var actual []byte
+	if response.Found {
+		actual = response.Actual
+	}
+	return actual, makeStatusFromProto(response.Status)
+}
+
+// Does compare-and-exchange and/or gets the old value of the record, as a string.
+//
+// @param key The key of the record.
+// @param expected The expected value.  If it is nil or NilString, no existing record is expected.  If it is AnyBytes or AnyString, an existing record with any value is expacted.
+// @param desired The desired value.  If it is nil or NilString, the record is to be removed.  If it is AnyBytes or AnyString, no update is done.
+// @return The old value and the result status.  If the condition doesn't meet, the state is INFEASIBLE_ERROR.  If there's no existing record, the value is NilString.
+func (self *RemoteDBM) CompareExchangeAndGetStr(
+	key interface{}, expected interface{}, desired interface{}) (string, *Status) {
+	rawActual, status := self.CompareExchangeAndGet(key, expected, desired)
+	actual := NilString
+	if rawActual != nil {
+		actual = string(rawActual)
+	}
+	return actual, status
 }
 
 // Increments the numeric value of a record.
@@ -648,7 +719,7 @@ func (self *RemoteDBM) Increment(
 
 // Compares the values of records and exchanges if the condition meets.
 //
-// @param expected A sequence of pairs of the record keys and their expected values.  If the value is nil, no existing record is expected.
+// @param expected A sequence of pairs of the record keys and their expected values.  If the value is nil, no existing record is expected.  If the value is AnyBytes, an existing record with any value is expacted.
 // @param desired A sequence of pairs of the record keys and their desired values.  If the value is nil, the record is to be removed.
 // @return The result status.  If the condition doesn't meet, StatusInfeasibleError is returned.
 func (self *RemoteDBM) CompareExchangeMulti(
@@ -664,7 +735,10 @@ func (self *RemoteDBM) CompareExchangeMulti(
 	for _, record := range expected {
 		state := RecordState{}
 		state.Key = record.Key
-		if record.Value != nil {
+		if IsAnyBytes(record.Value) {
+			state.Existence = true
+			state.AnyValue = true
+		} else if record.Value != nil {
 			state.Existence = true
 			state.Value = record.Value
 		}
@@ -688,8 +762,8 @@ func (self *RemoteDBM) CompareExchangeMulti(
 
 // Compares the values of records and exchanges if the condition meets, using string data.
 //
-// @param expected A sequence of pairs of the record keys and their expected values.  If the value is an empty string, no existing record is expected.
-// @param desired A sequence of pairs of the record keys and their desired values.  If the value is an empty string, the record is to be removed.
+// @param expected A sequence of pairs of the record keys and their expected values.  If the value is NilString, no existing record is expected.  If the value is AnyString, an existing record with any value is expacted.
+// @param desired A sequence of pairs of the record keys and their desired values.  If the value is NilString, the record is to be removed.
 // @return The result status.  If the condition doesn't meet, StatusInfeasibleError is returned.
 func (self *RemoteDBM) CompareExchangeMultiStr(
 	expected []KeyValueStrPair, desired []KeyValueStrPair) *Status {
@@ -704,7 +778,10 @@ func (self *RemoteDBM) CompareExchangeMultiStr(
 	for _, record := range expected {
 		state := RecordState{}
 		state.Key = ToByteArray(record.Key)
-		if len(record.Value) != 0 {
+		if IsAnyString(record.Value) {
+			state.Existence = true
+			state.AnyValue = true
+		} else if !IsNilString(record.Value) {
 			state.Existence = true
 			state.Value = ToByteArray(record.Value)
 		}
@@ -713,7 +790,7 @@ func (self *RemoteDBM) CompareExchangeMultiStr(
 	for _, record := range desired {
 		state := RecordState{}
 		state.Key = ToByteArray(record.Key)
-		if len(record.Value) != 0 {
+		if !IsNilString(record.Value) {
 			state.Existence = true
 			state.Value = ToByteArray(record.Value)
 		}
