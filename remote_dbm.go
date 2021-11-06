@@ -634,9 +634,12 @@ func (self *RemoteDBM) CompareExchange(
 // @param key The key of the record.
 // @param expected The expected value.  If it is nil or NilString, no existing record is expected.  If it is AnyBytes or AnyString, an existing record with any value is expacted.
 // @param desired The desired value.  If it is nil or NilString, the record is to be removed.  If it is AnyBytes or AnyString, no update is done.
+// @param retryWait The maximum wait time in seconds before retrying.  If it is zero, no retry is done.  If it is positive, retry is done after waiting for the notifications of the next update for the time at most.
+// @param notify If true, a notification signal is sent to wake up retrying threads.
 // @return The old value and the result status.  If the condition doesn't meet, the state is INFEASIBLE_ERROR.  If there's no existing record, the value is nil.
-func (self *RemoteDBM) CompareExchangeAndGet(
-	key interface{}, expected interface{}, desired interface{}) ([]byte, *Status) {
+func (self *RemoteDBM) CompareExchangeAdvanced(
+	key interface{}, expected interface{}, desired interface{},
+	retryWait float64, notify bool) ([]byte, *Status) {
 	if self.conn == nil {
 		return nil, NewStatus2(StatusPreconditionError, "not opened connection")
 	}
@@ -664,6 +667,10 @@ func (self *RemoteDBM) CompareExchangeAndGet(
 		}
 	}
 	request.GetActual = true
+	if retryWait > 0 {
+		request.RetryWait = retryWait
+	}
+	request.Notify = notify
 	response, err := self.stub.CompareExchange(ctx, &request)
 	if err != nil {
 		return nil, NewStatus2(StatusNetworkError, strGRPCError(err))
@@ -680,10 +687,13 @@ func (self *RemoteDBM) CompareExchangeAndGet(
 // @param key The key of the record.
 // @param expected The expected value.  If it is nil or NilString, no existing record is expected.  If it is AnyBytes or AnyString, an existing record with any value is expacted.
 // @param desired The desired value.  If it is nil or NilString, the record is to be removed.  If it is AnyBytes or AnyString, no update is done.
+// @param retryWait The maximum wait time in seconds before retrying.  If it is zero, no retry is done.  If it is positive, retry is done after waiting for the notifications of the next update for the time at most.
+// @param notify If true, a notification signal is sent to wake up retrying threads.
 // @return The old value and the result status.  If the condition doesn't meet, the state is INFEASIBLE_ERROR.  If there's no existing record, the value is NilString.
-func (self *RemoteDBM) CompareExchangeAndGetStr(
-	key interface{}, expected interface{}, desired interface{}) (string, *Status) {
-	rawActual, status := self.CompareExchangeAndGet(key, expected, desired)
+func (self *RemoteDBM) CompareExchangeAdvancedStr(
+	key interface{}, expected interface{}, desired interface{},
+	retryWait float64, notify bool) (string, *Status) {
+	rawActual, status := self.CompareExchangeAdvanced(key, expected, desired, retryWait, notify)
 	actual := NilString
 	if rawActual != nil {
 		actual = string(rawActual)
@@ -835,7 +845,7 @@ func (self *RemoteDBM) Rekey(oldKey interface{}, newKey interface{},
 
 // Gets the first record and removes it.
 //
-// @param retryWait The maximum wait time in seconds before retrying.  If it is zero, no retry is done.  If it is positive, retry is done and wait for the notifications of the next update for the time at most.
+// @param retryWait The maximum wait time in seconds before retrying.  If it is zero, no retry is done.  If it is positive, retry is done after waiting for the notifications of the next update for the time at most.
 // @return The key and the value of the first record, and the result status.
 func (self *RemoteDBM) PopFirst(retryWait float64) ([]byte, []byte, *Status) {
 	if self.conn == nil {
@@ -846,7 +856,9 @@ func (self *RemoteDBM) PopFirst(retryWait float64) ([]byte, []byte, *Status) {
 	defer cancel()
 	request := PopFirstRequest{}
 	request.DbmIndex = self.dbmIndex
-	request.RetryWait = retryWait
+	if retryWait > 0 {
+		request.RetryWait = retryWait
+	}
 	response, err := self.stub.PopFirst(ctx, &request)
 	if err != nil {
 		return nil, nil, NewStatus2(StatusNetworkError, strGRPCError(err))
@@ -859,7 +871,7 @@ func (self *RemoteDBM) PopFirst(retryWait float64) ([]byte, []byte, *Status) {
 
 // Gets the first record as strings and removes it.
 //
-// @param retryWait The maximum wait time in seconds before retrying.  If it is zero, no retry is done.  If it is positive, retry is done and wait for the notifications of the next update for the time at most.
+// @param retryWait The maximum wait time in seconds before retrying.  If it is zero, no retry is done.  If it is positive, retry is done after waiting for the notifications of the next update for the time at most.
 // @return The key and the value of the first record, and the result status.
 func (self *RemoteDBM) PopFirstStr(retryWait float64) (string, string, *Status) {
 	key, value, status := self.PopFirst(retryWait)

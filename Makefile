@@ -1,7 +1,7 @@
 # Makefile for Tkrzw-RPC for Go
 
 PACKAGE = tkrzw-rpc-go
-VERSION = 0.1.3
+VERSION = 0.1.4
 PACKAGEDIR = $(PACKAGE)-$(VERSION)
 PACKAGETGZ = $(PACKAGE)-$(VERSION).tar.gz
 
