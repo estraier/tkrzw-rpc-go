@@ -13,7 +13,7 @@ An instance of the struct "RemoteDBM" is used in order to handle a database conn
 
 The key and the value of the records are stored as byte arrays.  However, you can specify strings and other types which imlements the Stringer interface whereby the object is converted into a byte array.
 
-If you write the above import directive, the Go module for Tkrzw-RPC is installed implicitly when you build or run your program.  Go 1.14 or later is required to use this package.
+If you write the above import directive and prepare the "go.mod" file, the Go module for Tkrzw-RPC is installed implicitly when you run "go get".  Go 1.14 or later is required to use this package.
 
 The following code is a simple example to use a database, without checking errors.  Many methods accept both byte arrays and strings.  If strings are given, they are converted implicitly into byte arrays.
 
@@ -39,6 +39,11 @@ The following code is a simple example to use a database, without checking error
    fmt.Println(dbm.GetStrSimple("first", "*"))
    fmt.Println(dbm.GetStrSimple("second", "*"))
    fmt.Println(dbm.GetStrSimple("third", "*"))
+
+   // Checks and deletes a record.
+   if dbm.Check("first") {
+     dbm.Remove("first")
+   }
 
    // Traverses records with a range over a channel.
    for record := range dbm.EachStr() {

@@ -260,6 +260,28 @@ func (self *RemoteDBM) Inspect() map[string]string {
 	return result
 }
 
+// Checks if a record exists or not.
+//
+// @param key The key of the record.
+// @return True if the record exists, or false if not.
+func (self *RemoteDBM) Check(key interface{}) bool {
+	if self.conn == nil {
+		return false
+	}
+	ctx, cancel := context.WithTimeout(
+		context.Background(), time.Millisecond*time.Duration(self.timeout*1000))
+	defer cancel()
+	request := GetRequest{}
+	request.DbmIndex = self.dbmIndex
+	request.Key = ToByteArray(key)
+	request.OmitValue = true
+	response, err := self.stub.Get(ctx, &request)
+	if err != nil {
+		return false
+	}
+	return StatusCode(response.Status.Code) == StatusSuccess
+}
+
 // Gets the value of a record of a key.
 //
 // @param key The key of the record.

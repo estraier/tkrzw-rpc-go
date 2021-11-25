@@ -29,7 +29,7 @@ install :
 	@printf '\n'
 	@printf '#================================================================\n'
 	@printf '# Installation is not necessary.\n'
-	@printf '# Just import "github.com/estraier/tkrzw-go-rpc" in your Go code.\n'
+	@printf '# Just import "github.com/estraier/tkrzw-go-rpc" in your code and run "go get".\n'
 	@printf '#================================================================\n'
 
 dist :
